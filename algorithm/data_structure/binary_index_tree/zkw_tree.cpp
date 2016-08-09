@@ -43,7 +43,7 @@ public:
         M<<=1;
     }
 	
-	// search the first element whose corresponding prefix sum is equal to or larger than v
+    // search the first element whose corresponding prefix sum is equal to or larger than v
     int sum_search(int v) {
         int i = 1;
         do {
