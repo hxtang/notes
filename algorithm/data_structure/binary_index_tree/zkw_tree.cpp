@@ -34,6 +34,25 @@ public:
         return sum;
     }
 
+    // double current tree size, the expanded part are set to 0
+    void resize() {
+        tree.resize(M*4, 0);
+        for (int base = M; base; base >>= 1) //move current nodes to new locations
+            rotate(tree.begin()+base, tree.begin()+base*2, tree.begin()+base*3);
+        tree[1]=tree[2]; //new root
+        M<<=1;
+    }
+	
+	// search the first element whose corresponding prefix sum is equal to or larger than v
+    int sum_search(int v) {
+        int i = 1;
+        do {
+            i <<= 1;
+            if (v > tree[i]) v -= tree[i++];
+        } while (i < M);
+        return i-M;
+    }
+
 private:
     vector<int> tree;  //tree stored in array, size is M*2
     int M; //smallest power of 2 greater or equal than nums.size()+2
