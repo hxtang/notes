@@ -1,3 +1,5 @@
+// a toy example to help understanding reference count
+
 // a copy on write string which supports to_upper()
 // its copy constructor and copy assignment operator does not create a real c++ string until to_upper is called
 class cow_string {
