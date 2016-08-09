@@ -1,4 +1,4 @@
-#BIT
+#Fenwick tree
 
 ###设计思想
 通过把cumsum的值分散保存在idx在树中的路径上，并用位运算映射树结构，使检索更新cumsum快速简单
