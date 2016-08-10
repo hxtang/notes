@@ -1,4 +1,5 @@
 code snippets illustrating the idea some well-known algorithms in system
+
 the code is designed to be simple so that ideas appear intuitive, rather that flexible/robust for production code
 
 * bloom filter
