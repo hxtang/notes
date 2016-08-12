@@ -235,7 +235,33 @@ void parent_function() {
 In above examples, the commented line causes problems, and are fixed by the line following.
 
 ### Transferring ownership
+scoped thread
 
-### Choosing the number of lines at run time
+```c++
+class scoped_thread {
+    std::thread t;
+public:
+    explicit scoped_thread(std::thread t_) : t(std::move(t_)) { //1
+        if (!t.joinable) throw logic_error("no thread");        //2
+    }
+    ~ scoped_thread() { t.join(); };
+    scoped_thread(scoped_thread const&)=delete;
+    scoped_thread& operator=(scoped_thread const&)=delete;
+};
+```
+1. The constructor of the class takes a thread as input, and therefore can be called with an unnamed variable.
+2. In this case, we check if the thread is joinable in constructor.
+3. Similar to thread_guard, on deconstrutor of the class called, the join function is called.
+
+move support of thread also allows for move-aware containers of threads.
+
+### Choosing the number of threads at run time
+The max number of threads at run time can be acquired by
+```c++
+unsigned long const max_hardware_threads = std::thread::hardware_concurrency();
+```
 
 ### Identifying threads
+```c++
+std::thread::id thread_id = std::this_thread::get_id();
+```
