@@ -107,3 +107,135 @@ Not taking the reference will render compiling error because thread is not copy 
 **(Step 6, 7) Join v.s. detach**
 
 Detaching will not block the main thread as join, but finishing the main thread before detached threads will kill all remaining threads. Looks like detach is very tricky to use.
+
+### Exception safety
+
+```c++
+struct thread_functor_with_reference {
+    int& iref;
+
+    thread_functor_with_reference(int& iref_) : iref(iref_) {};
+
+    void operator() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        cout << iref;                                                     //1
+    }
+};
+
+void exception_prone_function() {
+    //do something likely to raise an exception
+}
+
+void function_parent () {
+    int local_var = 0;
+    thread_functor_with_reference func(local_var);
+    std::thread t(func);
+    try {
+        exception_prone_function();                                           //2
+    }
+    catch {
+        t.join();                                                             //2
+        throw;
+    };
+    t.join();                                                                  //1
+}
+```
+1. When parent thread run out of the scope of function_parent, the variable local_var is destroyed, and it causes undefined behavior. Therefore the new thread has to join.
+2. To be exception-safe, t.join() need to be added not only at end of function_parent, but also in the catch block (otherwise t may never be joined in case exception occurs).
+But this (1) is verbose (2) prone to bugs.
+
+A better way is to design a exception-safe class
+```c++
+class thread_guard {
+    std::thread& t;
+
+public:
+    explicit thread_guard(std::thread& t_) : t(t_) {};                      //1
+    ~thread_guard() {  if (t.joinable()) t.join(); }                   //2
+    thread_guard(thread_guard const&)=delete;                          //3
+    thread_guard& operator=(thread_guard const&)=delete;               //3
+};
+
+void function_parent (string filename) {
+    int local_var = 0;
+    thread_functor_with_reference func(local_var);
+    std::thread t(func);
+    thread_guard g(t);
+    try {
+        exception_prone_function();
+    }
+    catch {
+        throw;
+    };
+}
+```
+
+1. the class maintains a reference to the thread
+2. on exception or exit of the scope (function_parent), the deconstructor is called, and forces join.
+3. a thread is managed by a single guard, therefore it is not copyable.
+
+### Passing parameters
+
+Syntax
+```c++
+void thread_function(int param1, string& param2);
+
+void parent_function() {
+    int param1 = 0;
+    string param2;
+    std::thread t(thread_function, param1, param2);
+}
+```
+Note by default the parameters are __copied__ even if param2 is defined as reference in thread function. Because thread constructor is not aware of that.
+
+Three fitfalls
+* implicit conversion in the passed parameters: conversion does not happen at thread construction, and may not even have happened when the parent thread exits. 
+  Solution: do explicit conversion before passing, e.g. 
+
+```c++
+void thread_function(int param, string& str);
+
+void parent_function() {
+    int param = 0;
+    char buffer[1024];
+    buffer[0] = 1;
+    //std::thread t(thread_function, param, buffer);
+    std::thread t(thread_function, param, string(buffer));
+    t.detach();
+}
+```
+* function parameter is defined as a reference to return values by parameter, but the thread actually makes a copy of the object.
+
+```c++
+void thread_function(int param1, int& param2);
+
+void parent_function() {
+    int param1 = 0;
+    int param2 = 0;
+    //std::thread t(thread_function, param1, param2);
+    std::thread t(thread_function, param1, std::ref(param2));
+    t.join();
+}
+```
+* a movable, named object is passed into the thread, and the thread function intends to copy it.
+
+```c++
+void thread_function(int param1, unique_ptr<int> ptr_param2);
+
+void parent_function() {
+    int param1 = 0;
+    int param2 = 0;
+    unique_str<int> ptr(&param2);
+    std::thread t(thread_function, param1, unique_str<int>(&param2));
+    //std::thread t(thread_function, param1, ptr);
+    std::thread t(thread_function, param1, std::move(ptr));
+    t.join();
+}
+```
+In above examples, the commented line causes problems, and are fixed by the line following.
+
+### Transferring ownership
+
+### Choosing the number of lines at run time
+
+### Identifying threads
