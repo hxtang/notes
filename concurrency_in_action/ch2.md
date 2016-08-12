@@ -244,7 +244,7 @@ public:
     explicit scoped_thread(std::thread t_) : t(std::move(t_)) { //1
         if (!t.joinable) throw logic_error("no thread");        //2
     }
-    ~ scoped_thread() { t.join(); };
+    ~scoped_thread() { t.join(); };
     scoped_thread(scoped_thread const&)=delete;
     scoped_thread& operator=(scoped_thread const&)=delete;
 };
