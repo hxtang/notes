@@ -263,5 +263,10 @@ unsigned long const max_hardware_threads = std::thread::hardware_concurrency();
 
 ### Identifying threads
 ```c++
-std::thread::id thread_id = std::this_thread::get_id();
+std::thread t;
+std::thread::id t_id    = t.get_id();                 
+std::thread::id this_id = std::this_thread::get_id();
 ```
+Notes:
+std::thread::id is the data type for thread ids
+if a thread object is not associated with an active thread, get_id() returns a default id indicating "not any thread"
