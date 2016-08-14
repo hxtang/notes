@@ -9,5 +9,11 @@ the code is designed to be simple so that ideas appear intuitive, rather that fl
 * consistent hashing
   * idea: maintain a circular list of nodes, which can be dynamically added/removed
   * when a key arrives, find the first node after it in circular order.
-  
-
+* leaky bucket (sends at most N packets per second)
+  * maintain the number of packets that can be sent at the current second, update this number to N every second
+  * put all incoming packets in a waiting queue
+  * in an infinite loop, send the first packet in the queue when its size is less than the number of packets that can be sent
+* token bucket (sends at most N packets, and on average not greater than M packets per second)
+  * generate M tokens every second, but limit total number of tokens to at most N
+  * put all incoming packets in a waiting queue
+  * in an infinite loop, send the first packet in the queue when its size is less than the number of tokens
